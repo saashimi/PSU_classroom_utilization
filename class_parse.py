@@ -2,6 +2,7 @@ import pandas as pd
 import re
 import numpy as np
 import datetime
+import matplotlib.pyplot as plt
 
 #pd.options.mode.chained_assignment = None
 
@@ -14,16 +15,18 @@ def format_df_reg(df_reg):
     return df_reg
 
 def merge_xlist(df_xl):
+    """
+    Merges courses with a value in Xlist column. Sums Actual_Enrl for totals 
+    column but retains Room Number, Room Capacity, and Weekly Class Hours, as 
+    these numbers are constant. 
+    """
     df_xl = df_xl.loc[df_xl['Xlst'] != '']
-
-    # merge the crosslisted classes
     xl_operations = ({'ROOM' : 'max',
                       'Actual_Enrl' : 'sum', 
                       'Room_Capacity' : 'max',
                       'Weekly_Class_Hours' : 'max',})
     df_xl = df_xl.groupby('Xlst', as_index=False).agg(xl_operations)
     df_xl['%_Capacity'] = df_xl['Actual_Enrl'] / df_xl['Room_Capacity'].astype(int)
-    
     return df_xl
 
 def aggregate(df_agg):
@@ -43,6 +46,7 @@ def aggregate(df_agg):
     df_agg['Optimal_Size'] = 5 * round((df_agg['Actual_Enrl'] * 1.25)/5)
     # Optimal size should be a minimum of 10 seats
     df_agg.loc[df_agg['Optimal_Size'] < 10.0, 'Optimal_Size'] = 10.0
+    # 'Bin' figures to fixed ranges. From Ernest Tipton's 201604 Spreadsheet.
     df_agg.loc[(df_agg['Optimal_Size'] > 60.0) & (df_agg['Optimal_Size'] < 75.0), 'Optimal_Size'] = 75.0
     df_agg.loc[(df_agg['Optimal_Size'] > 75.0) & (df_agg['Optimal_Size'] < 80.0), 'Optimal_Size'] = 80.0
     df_agg.loc[(df_agg['Optimal_Size'] > 80.0) & (df_agg['Optimal_Size'] < 100.0), 'Optimal_Size'] = 100.0
@@ -61,8 +65,22 @@ def right_sizing(df_rs):
     # Round up to the nearest integer
     df_rs['Qty_Classrooms'] = np.ceil(df_rs['Calibrated_Demand'])
     df_rs['Qty_Seats'] = df_rs['Optimal_Size'] * df_rs['Qty_Classrooms']
-
     return df_rs
+
+def final_print(df_print):
+    print('==============================================')
+    print(df_print)
+    print("Total Number of Classrooms Needed (Projected): ", df_print['Qty_Classrooms'].sum())
+    print("Total Number of Seats Needed (Projected): ", df_print['Qty_Seats'].sum())
+    print('==============================================')
+    #plt.figure()
+    xticks = df_print['Optimal_Size'].tolist()
+    graph = df_print['Qty_Classrooms'].plot(kind='bar')
+    graph.set_xticklabels(xticks)
+    graph.set_xlabel('Classrooms by Size')
+    graph.set_ylabel('Number of Classrooms Needed (Projected)')
+    graph.set_ylim([0, 5])
+    plt.show()
 
 def main():
     school = input("Enter desired GSE or SPH for evaluation >>> ")
@@ -117,14 +135,8 @@ def main():
     df_xlist = merge_xlist(df)
     df_combined = aggregate(pd.concat([df_reg, df_xlist]))
     
-
     df_final = right_sizing(df_combined)
-    
-    print('==============================================')
-    print(df_final)
-    print("Total Number of Classrooms Needed (Projected): ", df_final['Qty_Classrooms'].sum())
-    print("Total Number of Seats Needed (Projected): ", df_final['Qty_Seats'].sum())
-    print('==============================================')
+    final_print(df_final)
     
 if __name__=='__main__':
     main()
