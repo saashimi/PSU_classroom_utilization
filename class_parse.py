@@ -54,7 +54,6 @@ def aggregate(df_agg):
     df_agg.loc[(df_agg['Optimal_Size'] > 150.0) & (df_agg['Optimal_Size'] < 200.0), 'Optimal_Size'] = 200.0
     df_agg.loc[(df_agg['Optimal_Size'] > 200.0) & (df_agg['Optimal_Size'] < 220.0), 'Optimal_Size'] = 220.0  
     df_agg.loc[(df_agg['Optimal_Size'] > 220.0) & (df_agg['Optimal_Size'] < 380.0), 'Optimal_Size'] = 380.0
-
     return df_agg
 
 def right_sizing(df_rs):
@@ -65,78 +64,85 @@ def right_sizing(df_rs):
     # Round up to the nearest integer
     df_rs['Qty_Classrooms'] = np.ceil(df_rs['Calibrated_Demand'])
     df_rs['Qty_Seats'] = df_rs['Optimal_Size'] * df_rs['Qty_Classrooms']
+    # Drop 
+    df_rs = df_rs.drop('Class_Hour_Utilization', 1)
     return df_rs
 
 def final_print(df_print):
-    print('==============================================')
+    print('===================================================================')
     print(df_print)
     print("Total Number of Classrooms Needed (Projected): ", df_print['Qty_Classrooms'].sum())
     print("Total Number of Seats Needed (Projected): ", df_print['Qty_Seats'].sum())
-    print('==============================================')
+    print('===================================================================','\n')
     #plt.figure()
-    xticks = df_print['Optimal_Size'].tolist()
-    graph = df_print['Qty_Classrooms'].plot(kind='bar')
-    graph.set_xticklabels(xticks)
-    graph.set_xlabel('Classrooms by Size')
-    graph.set_ylabel('Number of Classrooms Needed (Projected)')
-    graph.set_ylim([0, 5])
-    plt.show()
+    return df_print
 
 def main():
     school = input("Enter desired GSE or SPH for evaluation >>> ")
 
+    terms = ['201604', '201504', '201404', '201304']
+    graph_dfs = []
+    for term in terms:
+        df = pd.read_csv('classroom_data/PSU_master_classroom.csv')
+        df = df.fillna('')
+        df = df[df['Term'] == term]
 
-    current_term = 201604
-    df = pd.read_csv('classroom_data/PSU_master_classroom.csv')
-    df = df.fillna('')
+        ### Comment out this block for General PSU Campus Snapshot
+        # Filter for desired school
+        df_classes = pd.read_csv('enrollment_data/CLE-{0}-{1}.csv'.format(school, term))
+        # Filter out PE classes
+        df_classes = df_classes.loc[df_classes['Schedule_Type_Desc'] != 'Activity']
+        
+        df_classes['Class_'] = df_classes['Subj'] + " " + df_classes['Course'] 
+        valid_class_list = set(df_classes['Class_'].tolist())
+        df = df.loc[df['Class'].isin(valid_class_list)]
+        ###
 
-    #Clean for 201604 Data:
-    terms = ['201604']
-    df = df[df['Term'].isin(terms)]
+        # Split Meeting times into Days of the week, Start time, and End time
+        # Regex searches
+        df['Days'] = df['Meeting_Times'].str.extract('([^\s]+)', expand=True)
+        df['Start_Date'] = df['Meeting_Dates'].str.extract('^(.*?)-', expand=True)
+        df['End_Date'] = df['Meeting_Dates'].str.extract('((?<=-).*$)', expand=True)
+        df['Start_Time'] = df['Meeting_Times'].str.extract('(?<= )(.*)(?=-)', expand=True)
+        df['Start_Time'] = pd.to_datetime(df['Start_Time'], format='%H%M')
+        df['End_Time'] = df['Meeting_Times'].str.extract('((?<=-).*$)', expand=True)
+        df['End_Time'] = pd.to_datetime(df['End_Time'], format='%H%M')
+        df['Duration_Hr'] = ((df['End_Time'] - df['Start_Time']).dt.seconds)/3600
 
+        # Avoid classes that only occur on a single day
+        df = df.loc[df['Start_Date'] != df['End_Date']]
+
+        # Calculate number of days per week and treat Sunday condition
+        if 'SU' not in df['Days']:
+            df['Days_Per_Week'] = df['Days'].str.len()
+        else:
+            print('Sunday Condition!')
+            #ToDO: If sunday does come up, refactor code to address this.
+
+        df['%_Capacity'] = df['Actual_Enrl'].astype(int) / df['Room_Capacity'].astype(int) 
+        df['Actual_Enrl'] = df['Actual_Enrl'].astype(int)
+        df['Weekly_Class_Hours'] = df['Duration_Hr'] * df['Days_Per_Week']
+
+        df_reg = format_df_reg(df)
+        df_xlist = merge_xlist(df)
+        df_combined = aggregate(pd.concat([df_reg, df_xlist]))
+        
+        df_final = right_sizing(df_combined)
+        df_graph = final_print(df_final)
+        graph_dfs.append(df_graph)
+
+
+    for df in graph_dfs:
+        plt.figure()
+        graph = df['Qty_Classrooms'].plot(kind='bar')
+        xticks = df['Optimal_Size'].tolist()
+        graph.set_xticklabels(xticks)
+        graph.set_xlabel('Classrooms by Size')
+        graph.set_ylabel('Number of Classrooms Needed (Projected)')
+        graph.set_ylim([0, 5])
     
-    ### Comment out this block for General PSU Campus Snapshot
-    # Filter for desired school
-    df_classes = pd.read_csv('enrollment_data/CLE-{0}-{1}.csv'.format(school, current_term))
-    # Filter out PE classes
-    df_classes = df_classes.loc[df_classes['Schedule_Type_Desc'] != 'Activity']
-    
-    df_classes['Class_'] = df_classes['Subj'] + " " + df_classes['Course'] 
-    valid_class_list = set(df_classes['Class_'].tolist())
-    df = df.loc[df['Class'].isin(valid_class_list)]
-    ###
+    plt.show()
 
-    # Split Meeting times into Days of the week, Start time, and End time
-    # Regex searches
-    df['Days'] = df['Meeting_Times'].str.extract('([^\s]+)', expand=True)
-    df['Start_Date'] = df['Meeting_Dates'].str.extract('^(.*?)-', expand=True)
-    df['End_Date'] = df['Meeting_Dates'].str.extract('((?<=-).*$)', expand=True)
-    df['Start_Time'] = df['Meeting_Times'].str.extract('(?<= )(.*)(?=-)', expand=True)
-    df['Start_Time'] = pd.to_datetime(df['Start_Time'], format='%H%M')
-    df['End_Time'] = df['Meeting_Times'].str.extract('((?<=-).*$)', expand=True)
-    df['End_Time'] = pd.to_datetime(df['End_Time'], format='%H%M')
-    df['Duration_Hr'] = ((df['End_Time'] - df['Start_Time']).dt.seconds)/3600
-
-    # Avoid classes that only occur on a single day
-    df = df.loc[df['Start_Date'] != df['End_Date']]
-
-    # Calculate number of days per week and treat Sunday condition
-    if 'SU' not in df['Days']:
-        df['Days_Per_Week'] = df['Days'].str.len()
-    else:
-        print('Sunday Condition!')
-        #ToDO: If sunday does come up, refactor code to address this.
-
-    df['%_Capacity'] = df['Actual_Enrl'].astype(int) / df['Room_Capacity'].astype(int) 
-    df['Actual_Enrl'] = df['Actual_Enrl'].astype(int)
-    df['Weekly_Class_Hours'] = df['Duration_Hr'] * df['Days_Per_Week']
-
-    df_reg = format_df_reg(df)
-    df_xlist = merge_xlist(df)
-    df_combined = aggregate(pd.concat([df_reg, df_xlist]))
-    
-    df_final = right_sizing(df_combined)
-    final_print(df_final)
     
 if __name__=='__main__':
     main()
