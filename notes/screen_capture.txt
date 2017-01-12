@@ -1,8 +1,0 @@
-sudo apt-get install imagemagick mplayer gtk-recordmydesktop
-mplayer -ao null <video file name> -vo jpeg:outdir=output
-
-# This makes it look bad:
-convert output.gif -fuzz 10% -layers Optimize optimised.gif
-
-# This also had not worked:
-gifsicle -O in.gif -o out.gif
