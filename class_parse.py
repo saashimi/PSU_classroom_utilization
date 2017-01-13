@@ -4,11 +4,8 @@ import numpy as np
 import datetime
 import matplotlib.pyplot as plt
 
-#pd.options.mode.chained_assignment = None
-
 def format_df_reg(df_reg):
     df_reg = df_reg.loc[df_reg['Xlst'] == '']
-    #df_reg['Weekly_Class_Hours'] = df_reg['Duration_Hr'] * df_reg['Days_Per_Week']
     columns = ['ROOM', 'Actual_Enrl', 'Room_Capacity', 'Weekly_Class_Hours']
     df_reg = df_reg[columns]
     df_reg['%_Capacity'] = df_reg['Actual_Enrl'] / df_reg['Room_Capacity'].astype(int)
@@ -64,8 +61,7 @@ def right_sizing(df_rs):
     # Round up to the nearest integer
     df_rs['Qty_Classrooms'] = np.ceil(df_rs['Calibrated_Demand'])
     df_rs['Qty_Seats'] = df_rs['Optimal_Size'] * df_rs['Qty_Classrooms']
-    # Drop 
-    df_rs = df_rs.drop('Class_Hour_Utilization', 1)
+    df_rs = df_rs.drop('Class_Hour_Utilization', 1) #Simplify formatting for printing
     return df_rs
 
 def final_print(df_print, school_print, term_print):
@@ -82,18 +78,14 @@ def final_print(df_print, school_print, term_print):
     return df_print
 
 def plot_graphs(df_grph_lst):
-
     df_all = pd.concat(df_grph_lst)
     df_group = df_all.groupby(['Optimal_Size', 'Key'])
     df_group_plot = df_group.sum().unstack('Key').plot(kind='bar')
-    #xticks = df['Optimal_Size'].tolist()
-    #df_group_plot.set_xticklabels(xticks)
     df_group_plot.set_xlabel('Classrooms by Size')
     df_group_plot.set_ylabel('Number of Classrooms Needed (Projected)')
     df_group_plot.set_ylim([0, 5])
     plt.show()
     
-
 def main():
     school = input("Enter desired GSE or SPH for evaluation >>> ")
 
