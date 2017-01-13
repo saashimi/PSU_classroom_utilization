@@ -1,23 +1,27 @@
-CSV workflow
+class-parse.py Methodology
+--------------------------
 
--Use only meeting locations that are not TBA, web-only, off-campus, or N/A
--Group Crosslist IDs cp.df.groupby('Crosslist_ID')
--reindex df by crosslist
+Dependencies
+------------- 
+cycler==0.10.0
+matplotlib==1.5.3
+numpy==1.11.2
+pandas==0.19.1
+pyparsing==2.1.4
+python-dateutil==2.6.0
+pytz==2016.10
+six==1.10.0
 
-Row by row
+class_parse.py utilizes two main Datamaster CSV files:
+    - PSU_master_classroom.csv: This was generated from Datamaster classroom schedule query (Datamaster Table S0017 - ), containing ALL buildings. Provided in .xls format by CPO Space Analyst, Lucius Shields, and converted to CSV.
+    - CLE-<school>-<term>.csv, which are files generated from Datamaster Table S0025 (Course List with Enrollments) for each individual Fall term of interest. This file is used to generate a list of valid courses to filter against PSU_master_classroom.csv.
 
-crosslist.Actual_Enrl.sum() gives us the total number of students in the class
+Overall methodology assumptions:
+    - Program analyzes classroom useage BY SCHOOL. Modifications will have to be made to generate a campus-wide snapshot.
+    - Classes which have a start date and end date on the same day are not counted.
+    - Assumes a 1% enrollment growth rate over three years.
 
-There's already a % capacity for classes!
-
-classroom_list
----------------
-Room is Building Name
-Room.1 is Room Number
-
-Need to concatenate Room and Room.1
-df["Meeting_Location"] = df["Room"] + " " + df["Room.1"]
->>> result = pd.merge(df2, df, left_on=df2.Meeting_Location_1, right_on=df.Meeting_Location, how='inner')
-
-#df['Xlst_Max_Enrl'] = df['Xlst_Max_Enrl'].apply(lambda x: x if (x != '') else '0')
-
+Formulas used:
+    - Growth Rate = 1% * 3 years
+    - Classroom Utilization = sum(Weekly Class Hours per Classroom) / 40 Hours
+    - Calibrated Demand = Classroom Utilization + Growth Rate

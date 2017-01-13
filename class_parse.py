@@ -4,6 +4,29 @@ import numpy as np
 import datetime
 import matplotlib.pyplot as plt
 
+def filter_school(school_filter, term_filter):
+    df_classes = pd.read_csv('enrollment_data/CLE-{0}-{1}.csv'.format(school_filter, term_filter))
+    # Filter out PE classes
+    df_classes = df_classes.loc[df_classes['Schedule_Type_Desc'] != 'Activity']
+    
+    df_classes['Class_'] = df_classes['Subj'] + " " + df_classes['Course'] 
+    valid_class_list = set(df_classes['Class_'].tolist()) # Get only unique values
+    return valid_class_list
+
+def format_date(df_date):
+    """
+    Splits Meeting times into Days of the week, Start time, and End time using regex
+    """
+    df_date['Days'] = df_date['Meeting_Times'].str.extract('([^\s]+)', expand=True)
+    df_date['Start_Date'] = df_date['Meeting_Dates'].str.extract('^(.*?)-', expand=True)
+    df_date['End_Date'] = df_date['Meeting_Dates'].str.extract('((?<=-).*$)', expand=True)
+    df_date['Start_Time'] = df_date['Meeting_Times'].str.extract('(?<= )(.*)(?=-)', expand=True)
+    df_date['Start_Time'] = pd.to_datetime(df_date['Start_Time'], format='%H%M')
+    df_date['End_Time'] = df_date['Meeting_Times'].str.extract('((?<=-).*$)', expand=True)
+    df_date['End_Time'] = pd.to_datetime(df_date['End_Time'], format='%H%M')
+    df_date['Duration_Hr'] = ((df_date['End_Time'] - df_date['Start_Time']).dt.seconds)/3600
+    return df_date
+
 def format_df_reg(df_reg):
     df_reg = df_reg.loc[df_reg['Xlst'] == '']
     columns = ['ROOM', 'Actual_Enrl', 'Room_Capacity', 'Weekly_Class_Hours']
@@ -85,6 +108,7 @@ def plot_graphs(df_grph_lst):
     df_group_plot.set_ylabel('Number of Classrooms Needed (Projected)')
     df_group_plot.set_ylim([0, 5])
     plt.show()
+
     
 def main():
     school = input("Enter desired GSE or SPH for evaluation >>> ")
@@ -96,30 +120,12 @@ def main():
         df = df.fillna('')
         df = df[df['Term'] == int(term)]
 
-        
-        ### Comment out this block for General PSU Campus Snapshot
-        # Filter for desired school
-        df_classes = pd.read_csv('enrollment_data/CLE-{0}-{1}.csv'.format(school, term))
-        # Filter out PE classes
-        df_classes = df_classes.loc[df_classes['Schedule_Type_Desc'] != 'Activity']
-        
-        df_classes['Class_'] = df_classes['Subj'] + " " + df_classes['Course'] 
-        valid_class_list = set(df_classes['Class_'].tolist())
-        df = df.loc[df['Class'].isin(valid_class_list)]
+        ### Comment out this block for General PSU Campus snapshot
+        classes_to_check = filter_school(school, term)
+        df = df.loc[df['Class'].isin(classes_to_check)]
         ###
-        
 
-        # Split Meeting times into Days of the week, Start time, and End time
-        # Regex searches
-        df['Days'] = df['Meeting_Times'].str.extract('([^\s]+)', expand=True)
-        df['Start_Date'] = df['Meeting_Dates'].str.extract('^(.*?)-', expand=True)
-        df['End_Date'] = df['Meeting_Dates'].str.extract('((?<=-).*$)', expand=True)
-        df['Start_Time'] = df['Meeting_Times'].str.extract('(?<= )(.*)(?=-)', expand=True)
-        df['Start_Time'] = pd.to_datetime(df['Start_Time'], format='%H%M')
-        df['End_Time'] = df['Meeting_Times'].str.extract('((?<=-).*$)', expand=True)
-        df['End_Time'] = pd.to_datetime(df['End_Time'], format='%H%M')
-        df['Duration_Hr'] = ((df['End_Time'] - df['Start_Time']).dt.seconds)/3600
-
+        df = format_date(df)
         # Avoid classes that only occur on a single day
         df = df.loc[df['Start_Date'] != df['End_Date']]
 
