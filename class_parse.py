@@ -13,6 +13,12 @@ def filter_school(school_filter, term_filter):
     valid_class_list = set(df_classes['Class_'].tolist()) # Get only unique values
     return valid_class_list
 
+def filter_dept_control(term_filter):
+    df_dept = pd.read_csv('classroom_data/dept_control_list-{0}.csv'.format(term_filter))    
+    df_dept['Classroom'] = df_dept["Room"] + " " + df_dept["Room.1"]
+    valid_dept_class = set(df_dept['Classroom'].tolist()) # Get only unique values
+    return valid_dept_class
+
 def format_date(df_date):
     """
     Splits Meeting times into Days of the week, Start time, and End time using regex
@@ -106,7 +112,8 @@ def plot_graphs(df_grph_lst):
     df_group_plot = df_group.sum().unstack('Key').plot(kind='bar')
     df_group_plot.set_xlabel('Classrooms by Size')
     df_group_plot.set_ylabel('Number of Classrooms Needed (Projected)')
-    df_group_plot.set_ylim([0, 5])
+    df_group_plot.set_ylim([0, 5]) #Departmental view 
+    #df_group_plot.set_ylim([0, 75]) # Uncomment for FULL CAMPUS VIEW
     plt.show()
 
     
@@ -114,6 +121,8 @@ def main():
     school = input("Enter desired GSE or SPH for evaluation >>> ")
 
     terms = ['201604', '201504', '201404', '201304']
+    #terms = ['201404']
+
     graph_dfs = []
     for term in terms:
         df = pd.read_csv('classroom_data/PSU_master_classroom.csv')
@@ -123,6 +132,8 @@ def main():
         ### Comment out this block for General PSU Campus snapshot
         classes_to_check = filter_school(school, term)
         df = df.loc[df['Class'].isin(classes_to_check)]
+        dept_classrooms = filter_dept_control(term)
+        df = df.loc[df['ROOM'].isin(dept_classrooms)]
         ###
 
         df = format_date(df)
@@ -141,6 +152,9 @@ def main():
         df['Actual_Enrl'] = df['Actual_Enrl'].astype(int)
         df['Weekly_Class_Hours'] = df['Duration_Hr'] * df['Days_Per_Week']
 
+        print('Raw Class list dump:')
+        print(df[['ROOM', 'Room_Capacity', 'Class', 'Xlst', 'Actual_Enrl']])
+
         df_reg = format_df_reg(df)
         df_xlist = merge_xlist(df)
         df_combined = aggregate(pd.concat([df_reg, df_xlist]))
@@ -154,4 +168,3 @@ def main():
     
 if __name__=='__main__':
     main()
-    #print(df_combined.loc[df_combined['ROOM'] == 'NH 209'])
