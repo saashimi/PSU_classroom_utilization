@@ -68,14 +68,31 @@ def right_sizing(df_rs):
     df_rs = df_rs.drop('Class_Hour_Utilization', 1)
     return df_rs
 
-def final_print(df_print):
+def final_print(df_print, school_print, term_print):
     print('===================================================================')
+    print('Report for {0} - {1}'.format(school_print, term_print))
     print(df_print)
     print("Total Number of Classrooms Needed (Projected): ", df_print['Qty_Classrooms'].sum())
     print("Total Number of Seats Needed (Projected): ", df_print['Qty_Seats'].sum())
     print('===================================================================','\n')
-    #plt.figure()
+    columns = ['Optimal_Size', 'Key', 'Qty_Classrooms']
+    df_print['Key'] = term_print
+    df_print['Optimal_Size'] = df_print['Optimal_Size'].astype(int)
+    df_print = df_print[columns]
     return df_print
+
+def plot_graphs(df_grph_lst):
+
+    df_all = pd.concat(df_grph_lst)
+    df_group = df_all.groupby(['Optimal_Size', 'Key'])
+    df_group_plot = df_group.sum().unstack('Key').plot(kind='bar')
+    #xticks = df['Optimal_Size'].tolist()
+    #df_group_plot.set_xticklabels(xticks)
+    df_group_plot.set_xlabel('Classrooms by Size')
+    df_group_plot.set_ylabel('Number of Classrooms Needed (Projected)')
+    df_group_plot.set_ylim([0, 5])
+    plt.show()
+    
 
 def main():
     school = input("Enter desired GSE or SPH for evaluation >>> ")
@@ -97,6 +114,7 @@ def main():
         valid_class_list = set(df_classes['Class_'].tolist())
         df = df.loc[df['Class'].isin(valid_class_list)]
         ###
+
 
         # Split Meeting times into Days of the week, Start time, and End time
         # Regex searches
@@ -128,20 +146,10 @@ def main():
         df_combined = aggregate(pd.concat([df_reg, df_xlist]))
         
         df_final = right_sizing(df_combined)
-        df_graph = final_print(df_final)
+        df_graph = final_print(df_final, school, term)
         graph_dfs.append(df_graph)
 
-
-    for df in graph_dfs:
-        plt.figure()
-        graph = df['Qty_Classrooms'].plot(kind='bar')
-        xticks = df['Optimal_Size'].tolist()
-        graph.set_xticklabels(xticks)
-        graph.set_xlabel('Classrooms by Size')
-        graph.set_ylabel('Number of Classrooms Needed (Projected)')
-        graph.set_ylim([0, 5])
-    
-    plt.show()
+    plot_graphs(graph_dfs)
 
     
 if __name__=='__main__':
