@@ -102,8 +102,9 @@ def main():
     for term in terms:
         df = pd.read_csv('classroom_data/PSU_master_classroom.csv')
         df = df.fillna('')
-        df = df[df['Term'] == term]
+        df = df[df['Term'] == int(term)]
 
+        
         ### Comment out this block for General PSU Campus Snapshot
         # Filter for desired school
         df_classes = pd.read_csv('enrollment_data/CLE-{0}-{1}.csv'.format(school, term))
@@ -114,7 +115,7 @@ def main():
         valid_class_list = set(df_classes['Class_'].tolist())
         df = df.loc[df['Class'].isin(valid_class_list)]
         ###
-
+        
 
         # Split Meeting times into Days of the week, Start time, and End time
         # Regex searches
@@ -137,6 +138,7 @@ def main():
             print('Sunday Condition!')
             #ToDO: If sunday does come up, refactor code to address this.
 
+        df['Room_Capacity'] = df['Room_Capacity'].apply(lambda x: x if (x != 'No Data Available') else 0)
         df['%_Capacity'] = df['Actual_Enrl'].astype(int) / df['Room_Capacity'].astype(int) 
         df['Actual_Enrl'] = df['Actual_Enrl'].astype(int)
         df['Weekly_Class_Hours'] = df['Duration_Hr'] * df['Days_Per_Week']
