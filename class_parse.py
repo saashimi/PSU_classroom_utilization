@@ -19,9 +19,11 @@ def filter_dept_control_CPO_list(term_filter):
     """
     df_dept = pd.read_csv('classroom_data/CPO_dc_list-{0}.csv'.format(term_filter))    
     df_dept['Classroom'] = df_dept['Building'] + ' ' + df_dept['ROOM']
+    df_dept = df_dept[['Classroom', 'Dept']]
+    df_dept.rename(columns={'Dept' : 'Dept_'}, inplace=True)
     valid_dept_class = set(df_dept['Classroom'].tolist()) # Get only unique values
     print("== Using Internal CPO 2016 Departmentally-owned classroom information ==")
-    return valid_dept_class     
+    return valid_dept_class, df_dept
 
 def filter_dept_control(term_filter, filter_decision):
     if filter_decision == 'N':
@@ -29,7 +31,7 @@ def filter_dept_control(term_filter, filter_decision):
         df_dept['Classroom'] = df_dept["Room"] + " " + df_dept["Room.1"]
         valid_dept_class = set(df_dept['Classroom'].tolist()) # Get only unique values
         print("== Using DATAMASTER Departmentally-owned classroom information ==")
-        return valid_dept_class
+        return valid_dept_class, df_dept
     elif filter_decision == 'Y':
         valid_dept_class = filter_dept_control_CPO_list(term_filter)
         return valid_dept_class
@@ -139,8 +141,8 @@ def main():
 
     #terms = ['201604', '201504', '201404', '201304']
     terms = ['201604']
-
     graph_dfs = []
+
     for term in terms:
         df = pd.read_csv('classroom_data/PSU_master_classroom.csv')
         df = df.fillna('')
@@ -149,10 +151,14 @@ def main():
         ### Comment out this block for General PSU Campus snapshot
         classes_to_check = filter_school(school, term)
         df = df.loc[df['Class'].isin(classes_to_check)]
-        dept_classrooms = filter_dept_control(term, to_analyze)
-        df = df.loc[df['ROOM'].isin(dept_classrooms)]
+        dept_classrooms, df_class = filter_dept_control(term, to_analyze)
+        #df = df.loc[df['ROOM'].isin(dept_classrooms)]
+        df = pd.merge(df, df_class, left_on=df['ROOM'], right_on=df_class['Classroom'], how='inner')
+        # Avoids key error when printing
+        if 'Dept' in df: 
+            df.rename(columns={'Dept' : 'Dept_'}, inplace=True)
         ###
-
+        
         df = format_date(df)
         # Avoid classes that only occur on a single day
         df = df.loc[df['Start_Date'] != df['End_Date']]
@@ -170,7 +176,7 @@ def main():
         df['Weekly_Class_Hours'] = df['Duration_Hr'] * df['Days_Per_Week']
 
         print('Raw Class list dump:')
-        print(df[['ROOM', 'Room_Capacity', 'Class', 'Xlst', 'Actual_Enrl']])
+        print(df[['ROOM', 'Room_Capacity', 'Dept_', 'Class', 'Xlst', 'Actual_Enrl']])
 
         df_reg = format_df_reg(df)
         df_xlist = merge_xlist(df)
