@@ -17,10 +17,13 @@ def filter_dept_control_CPO_list(term_filter):
     """
     Special condition to check against CPO 2016 departmentally-owned classroom list
     """
-    df_dept = pd.read_csv('classroom_data/CPO_dc_list-{0}.csv'.format(term_filter))    
-    df_dept['Classroom'] = df_dept['Building'] + ' ' + df_dept['ROOM']
+    df_dept_control = pd.read_csv('classroom_data/CPO_dc_list-{0}.csv'.format(term_filter))    
+    df_share = pd.read_csv('classroom_data/CPO_gp_share_list-{0}.csv'.format(term_filter))    
+    df_dept = pd.concat([df_dept_control, df_share])
+    df_dept['Classroom'] = df_dept['Building'] + ' ' + df_dept['ROOM'].astype(str)
     df_dept = df_dept[['Classroom', 'Dept']]
     df_dept.rename(columns={'Dept' : 'Dept_'}, inplace=True)
+    #print(df_dept)
     valid_dept_class = set(df_dept['Classroom'].tolist()) # Get only unique values
     print("== Using Internal CPO 2016 Departmentally-owned classroom information ==")
     return valid_dept_class, df_dept
