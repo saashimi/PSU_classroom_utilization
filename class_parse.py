@@ -13,11 +13,19 @@ def filter_school(school_filter, term_filter):
     valid_class_list = set(df_classes['Class_'].tolist()) # Get only unique values
     return valid_class_list
 
+"""
 def filter_dept_control(term_filter):
     df_dept = pd.read_csv('classroom_data/dept_control_list-{0}.csv'.format(term_filter))    
     df_dept['Classroom'] = df_dept["Room"] + " " + df_dept["Room.1"]
     valid_dept_class = set(df_dept['Classroom'].tolist()) # Get only unique values
     return valid_dept_class
+"""
+
+def filter_dept_control(term_filter):
+    df_dept = pd.read_csv('classroom_data/CPO_dc_list-{0}.csv'.format(term_filter))    
+    df_dept['Classroom'] = df_dept['Building'] + " " + df_dept["ROOM"]
+    valid_dept_class = set(df_dept['Classroom'].tolist()) # Get only unique values
+    return valid_dept_class    
 
 def format_date(df_date):
     """
@@ -120,8 +128,8 @@ def plot_graphs(df_grph_lst):
 def main():
     school = input("Enter desired GSE or SPH for evaluation >>> ")
 
-    terms = ['201604', '201504', '201404', '201304']
-    #terms = ['201404']
+    #terms = ['201604', '201504', '201404', '201304']
+    terms = ['201604']
 
     graph_dfs = []
     for term in terms:
@@ -164,7 +172,6 @@ def main():
         graph_dfs.append(df_graph)
 
     plot_graphs(graph_dfs)
-
-    
+   
 if __name__=='__main__':
     main()
