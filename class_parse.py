@@ -5,10 +5,13 @@ import datetime
 import matplotlib.pyplot as plt
 
 def filter_school(school_filter, term_filter):
+    """
+    Loads enrollment csv by term and gnerates a list of unique classes for that 
+    department to check against the campus-wide classroom dataframe.
+    """
     df_classes = pd.read_csv('enrollment_data/CLE-{0}-{1}.csv'.format(school_filter, term_filter))
     # Filter out PE classes
     df_classes = df_classes.loc[df_classes['Schedule_Type_Desc'] != 'Activity']
-    
     df_classes['Class_'] = df_classes['Subj'] + " " + df_classes['Course'] 
     valid_class_list = set(df_classes['Class_'].tolist()) # Get only unique values
     return valid_class_list
@@ -23,7 +26,6 @@ def filter_dept_control_CPO_list(term_filter):
     df_dept['Classroom'] = df_dept['Building'] + ' ' + df_dept['ROOM'].astype(str)
     df_dept = df_dept[['Classroom', 'Dept']]
     df_dept.rename(columns={'Dept' : 'Dept_'}, inplace=True)
-    #print(df_dept)
     valid_dept_class = set(df_dept['Classroom'].tolist()) # Get only unique values
     print("== Using Internal CPO 2016 Departmentally-owned classroom information ==")
     return valid_dept_class, df_dept
@@ -78,7 +80,13 @@ def merge_xlist(df_xl):
     return df_xl
 
 def aggregate(df_agg):
-    # Aggregate arithmetic operations:
+    """
+    Main aggegation function of PSU classrooms. Inputs unified dataframe of 
+    crosslisted and non-crosslisted courses. Sums Weekly_Class_Hours and 
+    calculates mean of Room_Capacity and Actual_Enrl.
+
+    Performs Optimal 125% Size calculation.
+    """
     df_agg['Room_Capacity'] = df_agg['Room_Capacity'].astype(float)
     df_agg['Actual_Enrl'] = df_agg['Actual_Enrl'].astype(float)
 
@@ -129,6 +137,9 @@ def final_print(df_print, school_print, term_print):
     return df_print
 
 def plot_graphs(df_grph_lst):
+    """
+    Takes a list of dfs per term and plots them in a single figure.
+    """
     df_all = pd.concat(df_grph_lst)
     df_group = df_all.groupby(['Optimal_Size', 'Key'])
     df_group_plot = df_group.sum().unstack('Key').plot(kind='bar')
@@ -139,6 +150,9 @@ def plot_graphs(df_grph_lst):
     plt.show()
 
 def main():
+    """
+    Main program control flow.
+    """
     school = input("Enter desired department for evaluation: GSE or SPH >>> ").upper()
     to_analyze = input("Use custom 201604 CPO departmental ownership information? Y/N >>> ").upper()
 
@@ -181,8 +195,11 @@ def main():
         print('Raw Class list dump:')
         print(df[['ROOM', 'Room_Capacity', 'Dept_', 'Class', 'Xlst', 'Actual_Enrl']])
 
+        # split df into crosslisted and non-crosslisted classes and send them to
+        # respective functions for cleaning
         df_reg = format_df_reg(df)
         df_xlist = merge_xlist(df)
+        # Recombine into one dataframe
         df_combined = aggregate(pd.concat([df_reg, df_xlist]))
         
         df_final = right_sizing(df_combined)
