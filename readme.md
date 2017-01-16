@@ -4,14 +4,14 @@ This program is intended for use by the Portland State University Campus Plannin
 
 ### Dependencies
 
-*cycler==0.10.0
-*matplotlib==1.5.3
-*numpy==1.11.2
-*pandas==0.19.1
-*pyparsing==2.1.4
-*python-dateutil==2.6.0
-*pytz==2016.10
-*six==1.10.0
+* cycler==0.10.0
+* matplotlib==1.5.3
+* numpy==1.11.2
+* pandas==0.19.1
+* pyparsing==2.1.4
+* python-dateutil==2.6.0
+* pytz==2016.10
+* six==1.10.0
 
 ## Methodology
 
