@@ -18,7 +18,7 @@ This program is intended for use by the Portland State University Campus Plannin
 ### Data Sources
 
 class_parse.py utilizes two main Datamaster CSV files:
-* PSU_master_classroom.csv: This was generated from Datamaster classroom schedule query (Datamaster Table S0017 - ), containing ALL buildings. Provided in .xls format by CPO Space Analyst, Lucius Shields, and converted to CSV.
+* PSU_master_classroom.csv: This was generated from Datamaster classroom schedule query (Datamaster Table S0017), containing ALL buildings. Provided in .xls format by CPO Space Analyst, Lucius Shields, and converted to CSV.
 * CLE-school-term.csv, which are files generated from Datamaster Table S0025 (Course List with Enrollments) for each individual Fall term of interest. This file is used to generate a list of valid courses to filter against PSU_master_classroom.csv.
 
 ### Overall methodology assumptions:
