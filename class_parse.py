@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import re
 import numpy as np
@@ -9,7 +10,8 @@ def filter_school(school_filter, term_filter):
     Loads enrollment csv by term and gnerates a list of unique classes for that 
     department to check against the campus-wide classroom dataframe.
     """
-    df_classes = pd.read_csv('enrollment_data/CLE-{0}-{1}.csv'.format(school_filter, term_filter))
+    cls_filename = 'enrollment_data/CLE-{0}-{1}.csv'.format(school_filter, term_filter)
+    df_classes = pd.read_csv(os.path.join(os.path.dirname(__file__), cls_filename))
     # Filter out PE classes
     df_classes = df_classes.loc[df_classes['Schedule_Type_Desc'] != 'Activity']
     df_classes['Class_'] = df_classes['Subj'] + " " + df_classes['Course'] 
@@ -20,8 +22,10 @@ def filter_dept_control_CPO_list(term_filter):
     """
     Special condition to check against CPO 2016 departmentally-owned classroom list
     """
-    df_dept_control = pd.read_csv('classroom_data/CPO_dc_list-{0}.csv'.format(term_filter))    
-    df_share = pd.read_csv('classroom_data/CPO_gp_share_list-{0}.csv'.format(term_filter))    
+    dc_filename = 'classroom_data/CPO_dc_list-{0}.csv'.format(term_filter)
+    df_dept_control = pd.read_csv(os.path.join(os.path.dirname(__file__), dc_filename))    
+    sh_filename = 'classroom_data/CPO_gp_share_list-{0}.csv'.format(term_filter)
+    df_share = pd.read_csv(os.path.join(os.path.dirname(__file__), sh_filename))    
     df_dept = pd.concat([df_dept_control, df_share])
     df_dept['Classroom'] = df_dept['Building'] + ' ' + df_dept['ROOM'].astype(str)
     df_dept = df_dept[['Classroom', 'Dept']]
@@ -31,8 +35,9 @@ def filter_dept_control_CPO_list(term_filter):
     return valid_dept_class, df_dept
 
 def filter_dept_control(term_filter, filter_decision):
-    if filter_decision == 'N':
-        df_dept = pd.read_csv('classroom_data/dept_control_list-{0}.csv'.format(term_filter))    
+    if filter_decision == 'N': 
+        dep_filename = 'classroom_data/dept_control_list-{0}.csv'.format(term_filter)
+        df_dept = pd.read_csv(os.path.join(os.path.dirname(__file__), dep_filename))    
         df_dept['Classroom'] = df_dept["Room"] + " " + df_dept["Room.1"]
         valid_dept_class = set(df_dept['Classroom'].tolist()) # Get only unique values
         print("== Using DATAMASTER Departmentally-owned classroom information ==")
@@ -161,7 +166,7 @@ def main():
     graph_dfs = []
 
     for term in terms:
-        df = pd.read_csv('classroom_data/PSU_master_classroom.csv')
+        df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'classroom_data/PSU_master_classroom.csv'))
         df = df.fillna('')
         df = df[df['Term'] == int(term)]
 
