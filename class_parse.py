@@ -35,6 +35,10 @@ def filter_dept_control_CPO_list(term_filter):
     return valid_dept_class, df_dept
 
 def filter_dept_control(term_filter, filter_decision):
+    """
+    Loads departmental control list based on user prompt to use CPO departmental
+    listing or not. If input is Y, calls filter_dept_control_CPO_list() function.
+    """
     if filter_decision == 'N': 
         dep_filename = 'classroom_data/dept_control_list-{0}.csv'.format(term_filter)
         df_dept = pd.read_csv(os.path.join(os.path.dirname(__file__), dep_filename))    
@@ -46,7 +50,18 @@ def filter_dept_control(term_filter, filter_decision):
         valid_dept_class = filter_dept_control_CPO_list(term_filter)
         return valid_dept_class
     else: 
-        print('ERROR: Invalid input!')          
+        print('ERROR: Invalid input!')
+
+def filter_all_classrooms(term_filter):
+    """
+    Loads datamaster table for ALL classrooms per scheduled term.
+    """
+    dep_filename = 'classroom_data/GP_DPT-classrooms-{0}.csv'.format(term_filter)
+    df_dept = pd.read_csv(os.path.join(os.path.dirname(__file__), dep_filename))    
+    df_dept['Classroom'] = df_dept["Room"] + " " + df_dept["Room.1"]
+    valid_dept_class = set(df_dept['Classroom'].tolist()) # Get only unique values
+    print("== Using DATAMASTER 'All Classrooms' table S0019 ==")
+    return valid_dept_class, df_dept            
 
 def format_date(df_date):
     """
@@ -161,8 +176,8 @@ def main():
     school = input("Enter desired department for evaluation: GSE or SPH >>> ").upper()
     to_analyze = input("Use custom 201604 CPO departmental ownership information? Y/N >>> ").upper()
 
-    #terms = ['201604', '201504', '201404', '201304']
-    terms = ['201604']
+    terms = ['201604', '201504', '201404', '201304']
+    #terms = ['201604']
     graph_dfs = []
 
     for term in terms:
@@ -173,8 +188,12 @@ def main():
         ### Comment out this block for General PSU Campus snapshot
         classes_to_check = filter_school(school, term)
         df = df.loc[df['Class'].isin(classes_to_check)]
-        dept_classrooms, df_class = filter_dept_control(term, to_analyze)
-        #df = df.loc[df['ROOM'].isin(dept_classrooms)]
+
+        if school == 'GSE':
+            dept_classrooms, df_class = filter_dept_control(term, to_analyze)
+        if school == 'SPH':
+            dept_classrooms, df_class = filter_all_classrooms(term)
+
         df = pd.merge(df, df_class, left_on=df['ROOM'], right_on=df_class['Classroom'], how='inner')
         ###
 
