@@ -171,15 +171,19 @@ def final_print(df_print, school_print, term_print):
     df_print = df_print[columns]
     return df_print
 
-def plot_graphs(df_grph_lst):
+def plot_graphs(df_grph_lst, school_print, class_type_print):
     """
     Takes a list of dfs per term and plots them in a single figure.
     """
+    class_dct = ({'DO' : 'Departmentally-Controlled Classrooms',
+                  'GP' : 'General Pool Classrooms',
+                  'ALL': 'Dept-Controlled and General Pool Classrooms'})
     df_all = pd.concat(df_grph_lst)
     df_group = df_all.groupby(['Optimal_Size', 'Key'])
     df_group_plot = df_group.sum().unstack('Key').plot(kind='bar')
     df_group_plot.set_xlabel('Classrooms by Size')
     df_group_plot.set_ylabel('Number of Classrooms Needed (Projected)')
+    df_group_plot.set_title('{0} {1}'.format(school_print, class_dct[class_type_print]))
     df_group_plot.set_ylim([0, 5]) #Departmental view 
     #df_group_plot.set_ylim([0, 75]) # Uncomment for FULL CAMPUS VIEW
     plt.show()
@@ -246,7 +250,7 @@ def main():
         df_graph = final_print(df_final, school, term)
         graph_dfs.append(df_graph)
 
-    plot_graphs(graph_dfs)
+    plot_graphs(graph_dfs, school, inp_classroom_type)
    
 if __name__=='__main__':
     main()
