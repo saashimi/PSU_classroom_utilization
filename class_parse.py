@@ -30,7 +30,6 @@ def filter_dept_control_CPO_list(term_filter):
     df_dept['Classroom'] = df_dept['Building'] + ' ' + df_dept['ROOM'].astype(str)
     df_dept = df_dept[['Classroom', 'Dept']]
     df_dept.rename(columns={'Dept' : 'Dept_'}, inplace=True)
-    #valid_dept_class = set(df_dept['Classroom'].tolist()) # Get only unique values
     print("== Using Internal CPO 2016 Departmentally-owned classroom information ==")
     return df_dept
 
@@ -38,49 +37,46 @@ def filter_dept_control_list(term_filter):
     dep_filename = 'classroom_data/dept_control_list-{0}.csv'.format(term_filter)
     df_dept = pd.read_csv(os.path.join(os.path.dirname(__file__), dep_filename))    
     df_dept['Classroom'] = df_dept["Room"] + " " + df_dept["Room.1"]
-    #valid_dept_class = set(df_dept['Classroom'].tolist()) # Get only unique values
     print("== Using DATAMASTER Departmentally-owned classroom information ==") 
     return df_dept
 
 def filter_gp_classrooms(term_filter):
     dep_filename = 'classroom_data/GP-classrooms-{0}.csv'.format(term_filter)
-    df_dept = pd.read_csv(os.path.join(os.path.dirname(__file__), dep_filename))    
-    df_dept['Classroom'] = df_dept["Room"] + " " + df_dept["Room.1"]
-    #valid_dept_class = set(df_dept['Classroom'].tolist()) # Get only unique values
+    df_gp = pd.read_csv(os.path.join(os.path.dirname(__file__), dep_filename))    
+    df_gp['Classroom'] = df_gp["Room"] + " " + df_gp["Room.1"]
     print("== Using DATAMASTER General Pool classroom information ==") 
-    return df_dept   
+    return df_gp   
 
 def filter_all_classrooms(term_filter):
     """
     Loads datamaster table for ALL classrooms per scheduled term.
     """
     dep_filename = 'classroom_data/GP_DPT-classrooms-{0}.csv'.format(term_filter)
-    df_dept = pd.read_csv(os.path.join(os.path.dirname(__file__), dep_filename))    
-    df_dept['Classroom'] = df_dept["Room"] + " " + df_dept["Room.1"]
-    #valid_dept_class = set(df_dept['Classroom'].tolist()) # Get only unique values
+    df_all = pd.read_csv(os.path.join(os.path.dirname(__file__), dep_filename))    
+    df_all['Classroom'] = df_all["Room"] + " " + df_all["Room.1"]
     print("== Using DATAMASTER 'All Classrooms' table S0019 ==")
-    return df_dept        
+    return df_all      
 
 def filter_class_logic(term_filter, classroom_filter, CPO_decision):
     """
-    Loads departmental control list based on user prompt to use CPO departmental
-    listing or not. If input is Y, calls filter_class_control_CPO_list() function.
+    Controlling logic for filtering departmentally-owned, general pool, or ALL
+    classroom types. 
     """
     if classroom_filter == 'DO':
         if CPO_decision == 'N': 
             df_dept = filter_dept_control_list(term_filter)
             return df_dept
         elif CPO_decision == 'Y':
-            valid_dept_class = filter_dept_control_CPO_list(term_filter)
-            return valid_dept_class
+            CPO_dept_owned = filter_dept_control_CPO_list(term_filter)
+            return CPO_dept_owned
         else: 
             print('ERROR: Invalid input!')
     if classroom_filter == 'GP':
-        valid_dept_class = filter_gp_classrooms(term_filter)
-        return valid_dept_class
+        gp_class = filter_gp_classrooms(term_filter)
+        return gp_class
     if classroom_filter == 'ALL':    
-        valid_dept_class = filter_all_classrooms(term_filter)
-        return valid_dept_class
+        all_class = filter_all_classrooms(term_filter)
+        return all_class
 
 def format_date(df_date):
     """
