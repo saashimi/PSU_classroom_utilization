@@ -176,10 +176,11 @@ def main():
         dept_classrooms, df_class = filter_dept_control(term, to_analyze)
         #df = df.loc[df['ROOM'].isin(dept_classrooms)]
         df = pd.merge(df, df_class, left_on=df['ROOM'], right_on=df_class['Classroom'], how='inner')
-        # Avoids key error when printing
+        ###
+
+        # Avoid key error when printing
         if 'Dept' in df: 
             df.rename(columns={'Dept' : 'Dept_'}, inplace=True)
-        ###
         
         df = format_date(df)
         # Avoid classes that only occur on a single day
