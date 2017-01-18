@@ -30,27 +30,25 @@ def filter_dept_control_CPO_list(term_filter):
     df_dept['Classroom'] = df_dept['Building'] + ' ' + df_dept['ROOM'].astype(str)
     df_dept = df_dept[['Classroom', 'Dept']]
     df_dept.rename(columns={'Dept' : 'Dept_'}, inplace=True)
-    valid_dept_class = set(df_dept['Classroom'].tolist()) # Get only unique values
+    #valid_dept_class = set(df_dept['Classroom'].tolist()) # Get only unique values
     print("== Using Internal CPO 2016 Departmentally-owned classroom information ==")
-    return valid_dept_class, df_dept
+    return df_dept
 
-def filter_dept_control(term_filter, filter_decision):
-    """
-    Loads departmental control list based on user prompt to use CPO departmental
-    listing or not. If input is Y, calls filter_dept_control_CPO_list() function.
-    """
-    if filter_decision == 'N': 
-        dep_filename = 'classroom_data/dept_control_list-{0}.csv'.format(term_filter)
-        df_dept = pd.read_csv(os.path.join(os.path.dirname(__file__), dep_filename))    
-        df_dept['Classroom'] = df_dept["Room"] + " " + df_dept["Room.1"]
-        valid_dept_class = set(df_dept['Classroom'].tolist()) # Get only unique values
-        print("== Using DATAMASTER Departmentally-owned classroom information ==")
-        return valid_dept_class, df_dept
-    elif filter_decision == 'Y':
-        valid_dept_class = filter_dept_control_CPO_list(term_filter)
-        return valid_dept_class
-    else: 
-        print('ERROR: Invalid input!')
+def filter_dept_control_list(term_filter):
+    dep_filename = 'classroom_data/dept_control_list-{0}.csv'.format(term_filter)
+    df_dept = pd.read_csv(os.path.join(os.path.dirname(__file__), dep_filename))    
+    df_dept['Classroom'] = df_dept["Room"] + " " + df_dept["Room.1"]
+    #valid_dept_class = set(df_dept['Classroom'].tolist()) # Get only unique values
+    print("== Using DATAMASTER Departmentally-owned classroom information ==") 
+    return df_dept
+
+def filter_gp_classrooms(term_filter):
+    dep_filename = 'classroom_data/GP-classrooms-{0}.csv'.format(term_filter)
+    df_dept = pd.read_csv(os.path.join(os.path.dirname(__file__), dep_filename))    
+    df_dept['Classroom'] = df_dept["Room"] + " " + df_dept["Room.1"]
+    #valid_dept_class = set(df_dept['Classroom'].tolist()) # Get only unique values
+    print("== Using DATAMASTER General Pool classroom information ==") 
+    return df_dept   
 
 def filter_all_classrooms(term_filter):
     """
@@ -59,9 +57,30 @@ def filter_all_classrooms(term_filter):
     dep_filename = 'classroom_data/GP_DPT-classrooms-{0}.csv'.format(term_filter)
     df_dept = pd.read_csv(os.path.join(os.path.dirname(__file__), dep_filename))    
     df_dept['Classroom'] = df_dept["Room"] + " " + df_dept["Room.1"]
-    valid_dept_class = set(df_dept['Classroom'].tolist()) # Get only unique values
+    #valid_dept_class = set(df_dept['Classroom'].tolist()) # Get only unique values
     print("== Using DATAMASTER 'All Classrooms' table S0019 ==")
-    return valid_dept_class, df_dept            
+    return df_dept        
+
+def filter_class_logic(term_filter, classroom_filter, CPO_decision):
+    """
+    Loads departmental control list based on user prompt to use CPO departmental
+    listing or not. If input is Y, calls filter_class_control_CPO_list() function.
+    """
+    if classroom_filter == 'DO':
+        if CPO_decision == 'N': 
+            df_dept = filter_dept_control_list(term_filter)
+            return df_dept
+        elif CPO_decision == 'Y':
+            valid_dept_class = filter_dept_control_CPO_list(term_filter)
+            return valid_dept_class
+        else: 
+            print('ERROR: Invalid input!')
+    if classroom_filter == 'GP':
+        valid_dept_class = filter_gp_classrooms(term_filter)
+        return valid_dept_class
+    if classroom_filter == 'ALL':    
+        valid_dept_class = filter_all_classrooms(term_filter)
+        return valid_dept_class
 
 def format_date(df_date):
     """
@@ -173,11 +192,16 @@ def main():
     """
     Main program control flow.
     """
-    school = input("Enter desired department for evaluation: GSE or SPH >>> ").upper()
-    to_analyze = input("Use custom 201604 CPO departmental ownership information? Y/N >>> ").upper()
-
     terms = ['201604', '201504', '201404', '201304']
-    #terms = ['201604']
+    school = input("Enter desired department for evaluation: GSE or SPH >>> ").upper()
+    inp_classroom_type = input("Filter by Departmentally-Owned, General Pool, or ALL Classrooms? DO/GP/ALL >>> ").upper()
+    if inp_classroom_type == 'DO':
+        inp_CPO = input("Use custom 201604 CPO departmental ownership information? Y/N >>> ").upper()
+        if inp_CPO == 'Y':
+            terms = ['201604']
+    else:
+        inp_CPO = ""
+    
     graph_dfs = []
 
     for term in terms:
@@ -188,12 +212,7 @@ def main():
         ### Comment out this block for General PSU Campus snapshot
         classes_to_check = filter_school(school, term)
         df = df.loc[df['Class'].isin(classes_to_check)]
-
-        if school == 'GSE':
-            dept_classrooms, df_class = filter_dept_control(term, to_analyze)
-        if school == 'SPH':
-            dept_classrooms, df_class = filter_all_classrooms(term)
-
+        df_class = filter_class_logic(term, inp_classroom_type, inp_CPO)
         df = pd.merge(df, df_class, left_on=df['ROOM'], right_on=df_class['Classroom'], how='inner')
         ###
 
