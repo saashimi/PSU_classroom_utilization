@@ -40,6 +40,13 @@ def filter_dept_control_list(term_filter):
     print("== Using DATAMASTER Departmentally-owned classroom information ==") 
     return df_dept
 
+def filter_AIM_dept_control_list(school_filter, term_filter):
+    dep_filename = 'classroom_data/AIM-{0}-{1}.csv'.format(school_filter, term_filter)
+    df_dept = pd.read_csv(os.path.join(os.path.dirname(__file__), dep_filename))    
+    df_dept['Classroom'] = df_dept["acronym"] + " " +df_dept["location_code"]
+    print("== Using AIM Departmentally-owned classroom information ==") 
+    return df_dept
+
 def filter_gp_classrooms(term_filter):
     dep_filename = 'classroom_data/GP-classrooms-{0}.csv'.format(term_filter)
     df_gp = pd.read_csv(os.path.join(os.path.dirname(__file__), dep_filename))    
@@ -57,18 +64,21 @@ def filter_all_classrooms(term_filter):
     print("== Using DATAMASTER 'All Classrooms' table S0019 ==")
     return df_all      
 
-def filter_class_logic(term_filter, classroom_filter, CPO_decision):
+def filter_class_logic(school_filter, term_filter, classroom_filter, db_decision):
     """
     Controlling logic for filtering departmentally-owned, general pool, or ALL
     classroom types. 
     """
     if classroom_filter == 'DO':
-        if CPO_decision == 'N': 
+        if db_decision == 'DATAMASTER': 
             df_dept = filter_dept_control_list(term_filter)
             return df_dept
-        elif CPO_decision == 'Y':
+        elif db_decision == 'CPO':
             CPO_dept_owned = filter_dept_control_CPO_list(term_filter)
             return CPO_dept_owned
+        elif db_decision == 'AIM':
+            AIM_dept_owned = filter_AIM_dept_control_list(school_filter, term_filter)
+            return AIM_dept_owned
         else: 
             print('ERROR: Invalid input!')
     if classroom_filter == 'GP':
@@ -188,20 +198,26 @@ def plot_graphs(df_grph_lst, school_print, class_type_print):
     #df_group_plot.set_ylim([0, 75]) # Uncomment for FULL CAMPUS VIEW
     plt.show()
 
-def main():
+def input_flow():
     """
-    Main program control flow.
+    Captures main User prompts and inputs
     """
     terms = ['201604', '201504', '201404', '201304']
     school = input("Enter desired department for evaluation: GSE or SPH >>> ").upper()
     inp_classroom_type = input("Filter by Departmentally-Owned, General Pool, or ALL Classrooms? DO/GP/ALL >>> ").upper()
     if inp_classroom_type == 'DO':
-        inp_CPO = input("Use custom 201604 CPO departmental ownership information? Y/N >>> ").upper()
-        if inp_CPO == 'Y':
+        inp_db = input("Choose department ownership by database: CPO/AIM/DATAMASTER >>> ").upper()
+        if inp_db == 'CPO' or inp_db == 'AIM':
             terms = ['201604']
     else:
-        inp_CPO = ""
-    
+        inp_db = ""
+    return terms, school, inp_classroom_type, inp_db
+
+def main():
+    """
+    Main program control flow.
+    """
+    terms, school, inp_classroom_type, inp_db = input_flow()
     graph_dfs = []
 
     for term in terms:
@@ -212,7 +228,7 @@ def main():
         ### Comment out this block for General PSU Campus snapshot
         classes_to_check = filter_school(school, term)
         df = df.loc[df['Class'].isin(classes_to_check)]
-        df_class = filter_class_logic(term, inp_classroom_type, inp_CPO)
+        df_class = filter_class_logic(school, term, inp_classroom_type, inp_db)
         df = pd.merge(df, df_class, left_on=df['ROOM'], right_on=df_class['Classroom'], how='inner')
         ###
 
@@ -253,4 +269,4 @@ def main():
     plot_graphs(graph_dfs, school, inp_classroom_type)
    
 if __name__=='__main__':
-    main()
+    main()            #ToDO: If sunday does come up, refactor code to address this.
