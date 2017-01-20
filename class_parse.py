@@ -202,7 +202,8 @@ def input_flow():
     """
     Captures main User prompts and inputs
     """
-    terms = ['201604', '201504', '201404', '201304']
+    #terms = ['201604', '201504', '201404', '201304']
+    terms = ['201604']
     school = input("Enter desired department for evaluation: GSE or SPH >>> ").upper()
     inp_classroom_type = input("Filter by Departmentally-Owned, General Pool, or ALL Classrooms? DO/GP/ALL >>> ").upper()
     if inp_classroom_type == 'DO':
