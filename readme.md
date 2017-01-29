@@ -33,4 +33,4 @@ class_parse.py utilizes two main Datamaster CSV files:
 * Calibrated Demand = Classroom Utilization + Growth Rate
 
 ### Sample output:
-![Alt text](screenshot.jpg?raw=true "Screenshot")
+![Alt text](./screenshot.png?raw=true "Screenshot")
