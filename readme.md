@@ -31,3 +31,6 @@ class_parse.py utilizes two main Datamaster CSV files:
 * Growth Rate = 1% * 3 years
 * Classroom Utilization = sum(Weekly Class Hours per Classroom) / 40 Hours
 * Calibrated Demand = Classroom Utilization + Growth Rate
+
+### Sample output:
+![Alt text](screenshot.jpg?raw=true "Screenshot")
