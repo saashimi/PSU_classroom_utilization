@@ -24,14 +24,18 @@ def format_date(df_date):
         df_date['Day_{0}'.format(day)] = ''
     for index, row in df_date.iterrows():
         for day in row['Days']:
-            try:
-                start_time = pd.to_datetime(date_dict[day] + row['Start_Time'], format='%Y/%m/%d%H%M')
-                end_time = pd.to_datetime(date_dict[day] + row['End_Time'], format='%Y/%m/%d%H%M')
-                #df_date.loc[index, 'Day_{0}'.format(day)] = pd.date_range(start_time, end_time)
-                df_date.loc[index, 'Day_{0}'.format(day)] = start_time
-            except:
-                continue
-    #df_date.to_csv('test_output.csv')
+            for match_day in days:
+                try:
+                    if day == match_day:
+                        start_time = pd.to_datetime(date_dict[day] + row['Start_Time'], format='%Y/%m/%d%H%M')
+                        end_time = pd.to_datetime(date_dict[day] + row['End_Time'], format='%Y/%m/%d%H%M')
+                        #df_date.loc[index, 'Day_{0}'.format(day)] = pd.date_range(start_time, end_time)
+                        df_date.loc[index, 'Day_{0}'.format(day)] = start_time
+                    else:
+                        continue
+                except:
+                    continue
+    df_date.to_csv('test_output.csv')
     return df_date
 
 
