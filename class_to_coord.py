@@ -45,11 +45,9 @@ def save_to_csv(df_final):
     """
     days = ['M', 'T', 'W', 'R', 'F', 'S', 'U']
     for day in days:
-        for column in df_final:
-            if column ==  'Day_{0}'.format(day):
-                df_temp = df_final.loc[df_final['Day_{0}'.format(day)] != '']
-                columns = ['Building', 'Class', 'Actual_Enrl', 'Day_{0}'.format(day), 'Latitude', 'Longitude']
-                df_temp.to_csv('classes_{0}.csv'.format(day), columns=columns)
+        df_temp = df_final.loc[df_final['Day_{0}'.format(day)] != '']
+        columns = ['Building', 'Class', 'Actual_Enrl', 'Day_{0}'.format(day), 'Latitude', 'Longitude']
+        df_temp.to_csv('classes_{0}.csv'.format(day), columns=columns)
 
 def join_coords(df_proc):
     filename = 'map_input/bldg_pt.csv'
