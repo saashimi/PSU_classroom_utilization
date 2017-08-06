@@ -31,14 +31,25 @@ def format_date(df_date):
                 df_date.loc[index, 'Day_{0}'.format(day)] = start_time
             except:
                 continue
+    #df_date.to_csv('test_output.csv')
     return df_date
 
+
 def save_to_csv(df_final):
+    """
+    Save to separate csv files per weekday
+    """
     days = ['M', 'T', 'W', 'R', 'F', 'S', 'U']
     for day in days:
         df_final = df_final.loc[df_final['Day_{0}'.format(day)] != '']
-        columns = ['Building', 'Class', 'Actual_Enrl', 'Day_{0}'.format(day)]
-        df_final.to_csv('/map_output/classes_{0}.csv'.format(day), columns=columns)
+        columns = ['Building', 'Class', 'Actual_Enrl', 'Day_{0}'.format(day), 'Latitude', 'Longitude']
+        df_final.to_csv('classes_{0}.csv'.format(day), columns=columns)
+
+def join_coords(df_proc):
+    filename = 'map_input/bldg_pt.csv'
+    df_new = pd.read_csv(os.path.join(os.path.dirname(__file__), filename))
+    df_coord = pd.merge(df_proc, df_new, left_on='Building', right_on='BUILDINGID', how='left')
+    return df_coord
 
 def main():
     """
@@ -53,11 +64,12 @@ def main():
     df = df.loc[df['Term'].isin(terms)]
 
     df = format_date(df)
+    df_joined = join_coords(df)
 
     # Avoid classes that only occur on a single day
-    df = df.loc[df['Start_Date'] != df['End_Date']]
-    df = df.loc[df['Online Instruct Method'] != 'Fully Online']
-    save_to_csv(df)
+    #df = df.loc[df['Start_Date'] != df['End_Date']]
+    df_last = df_joined.loc[df_joined['Online Instruct Method'] != 'Fully Online']
+    save_to_csv(df_last)
 
 if __name__ == '__main__':
     main()
