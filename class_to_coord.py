@@ -21,21 +21,23 @@ def format_date(df_date):
     date_dict = {'M' : '2016/09/26', 'T': '2016/09/27', 'W': '2016/09/28', 'R': '2016/09/29', 'F': '2016/09/30', 'S': '2016/10/01', 'U':'2016/10/02'}
     days = ['M', 'T', 'W', 'R', 'F', 'S', 'U']
     for day in days:
-        df_date['Day_{0}'.format(day)] = ''
+        df_date['Day_start_{0}'.format(day)] = 'na'
+        df_date['Day_end_{0}'.format(day)] = 'na'
+
     for index, row in df_date.iterrows():
         for day in row['Days']:
-            for match_day in days:
+            for match_day in days: # e.g. MWF in the string
                 try:
                     if day == match_day:
                         start_time = pd.to_datetime(date_dict[day] + row['Start_Time'], format='%Y/%m/%d%H%M')
                         end_time = pd.to_datetime(date_dict[day] + row['End_Time'], format='%Y/%m/%d%H%M')
                         #df_date.loc[index, 'Day_{0}'.format(day)] = pd.date_range(start_time, end_time)
-                        df_date.loc[index, 'Day_{0}'.format(day)] = start_time
+                        df_date.loc[index, 'Day_start_{0}'.format(day)] = start_time
+                        df_date.loc[index, 'Day_end_{0}'.format(day)] = end_time
                     else:
                         continue
                 except:
                     continue
-    df_date.to_csv('test_output.csv')
     return df_date
 
 
@@ -43,10 +45,22 @@ def save_to_csv(df_final):
     """
     Save to separate csv files per weekday
     """
+    df_final = df_final.loc[
+        (df_final['Latitude'] != None) &
+        (df_final['Longitude'] != None)]
+    columns = ['Building', 'Class', 'Actual_Enrl', 'Latitude', 'Longitude']
+    day_cols = [col for col in df_final.columns if 'Day' in col]
+    for col in day_cols:
+        columns.append(col)   
+    df_final.to_csv('full_sched.csv', columns=columns)
     days = ['M', 'T', 'W', 'R', 'F', 'S', 'U']
     for day in days:
-        df_temp = df_final.loc[df_final['Day_{0}'.format(day)] != '']
-        columns = ['Building', 'Class', 'Actual_Enrl', 'Day_{0}'.format(day), 'Latitude', 'Longitude']
+        df_temp = df_final.loc[
+            (df_final['Day_start_{0}'.format(day)] != 'na') &
+            (df_final['Day_end_{0}'.format(day)] != 'na') &
+            (df_final['Actual_Enrl'] > 0) ]
+        columns = ['Building', 'Class', 'Actual_Enrl', 'Day_start_{0}'.format(day),
+         'Day_end_{0}'.format(day), 'Latitude', 'Longitude']
         df_temp.to_csv('classes_{0}.csv'.format(day), columns=columns)
 
 def join_coords(df_proc):
@@ -68,6 +82,7 @@ def main():
     df = df.loc[df['Term'].isin(terms)]
 
     df = format_date(df)
+
     df = join_coords(df)
 
     # Avoid classes that only occur on a single day
